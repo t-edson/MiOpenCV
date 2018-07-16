@@ -94,12 +94,12 @@ uses
 const
 {$ifdef MSWINDOWS}
 {$ifdef V3}
-cvDLL       = 'opencv_world300.dll';
+ cvDLL       = 'opencv_world300.dll';
  videoDLL    = 'opencv_world300.dll';
  calibDLL    = 'opencv_world300.dll';
  HighGUI_DLL = 'opencv_world300.dll';
  cxCore      = 'opencv_world300.dll';
-  cvCam       = 'opencv_world300.dll';
+ cvCam       = 'opencv_world300.dll';
 
 {$else}
 {$ifdef V2}
@@ -108,6 +108,7 @@ cvDLL       = 'opencv_world300.dll';
  calibDLL    = 'opencv_calib3d2412.dll';
  HighGUI_DLL = 'opencv_highgui2412.dll';
  cxCore      = 'opencv_core2412.dll';
+ legacyDLL   = 'opencv_legacy2412d.dll';
 {$else}
  cvDLL       = 'CV100.DLL';
  videoDLL    = 'CV100.DLL';
@@ -121,18 +122,12 @@ cvDLL       = 'opencv_world300.dll';
 
 {$ifdef LINUX} 
 {$ifdef V2}
-// cvDLL       = 'libcv.so.2.1';
-  cvDLL       = 'libopencv_imgproc.so.2.4.9';
-// videoDLL    = 'libcv.so.2.1';
-  videoDLL    = 'libopencv_video.so.2.4.9';
-// calibDLL    = 'libcv.so.2.1';
-  calibDLL    = 'libopencv_calib3d.so.2.4.9';
-// HighGUI_DLL = 'libhighgui.so.2.1';
-  HighGUI_DLL = 'libopencv_highgui.so.2.4.9';
-// cxCore      = 'libcxcore.so.2.1';
-  cxCore      = 'libopencv_core.so.2.4.9';
-  // New !!!
-  legacyDLL = 'libopencv_legacy.so.2.4.9';
+ cvDLL       = 'libopencv_imgproc.so.2.4.9';
+ videoDLL    = 'libopencv_video.so.2.4.9';
+ calibDLL    = 'libopencv_calib3d.so.2.4.9';
+ HighGUI_DLL = 'libopencv_highgui.so.2.4.9';
+ cxCore      = 'libopencv_core.so.2.4.9';
+ legacyDLL = 'libopencv_legacy.so.2.4.9';
 {$else}
  cvDLL       = '???';
  videoDLL    = '???';
