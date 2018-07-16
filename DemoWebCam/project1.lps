@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <Version Value="10"/>
+    <BuildModes Active="Default"/>
+    <Units Count="5">
+      <Unit0>
+        <Filename Value="project1.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos Y="20"/>
+        <UsageCount Value="23"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="unit1.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Unit1"/>
+        <CursorPos Y="12"/>
+        <FoldState Value=" T0fQ31Q"/>
+        <UsageCount Value="23"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="OpenCV.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="104"/>
+        <CursorPos X="28" Y="129"/>
+        <UsageCount Value="11"/>
+        <Bookmarks Count="2">
+          <Item0 Y="1548" ID="1"/>
+          <Item1 Y="1891" ID="2"/>
+        </Bookmarks>
+      </Unit2>
+      <Unit3>
+        <Filename Value="/usr/share/lazarus/1.8.4/lcl/dialogs.pp"/>
+        <UnitName Value="Dialogs"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="685"/>
+        <CursorPos X="11" Y="696"/>
+        <UsageCount Value="10"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="../OpenCV.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="2293"/>
+        <CursorPos X="52" Y="2310"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit4>
+    </Units>
+    <JumpHistory Count="3" HistoryIndex="2">
+      <Position1>
+        <Filename Value="unit1.pas"/>
+        <Caret Line="61" Column="25" TopLine="33"/>
+      </Position1>
+      <Position2>
+        <Filename Value="unit1.pas"/>
+        <Caret Line="53" Column="25" TopLine="33"/>
+      </Position2>
+      <Position3>
+        <Filename Value="unit1.pas"/>
+        <Caret Line="12"/>
+      </Position3>
+    </JumpHistory>
+  </ProjectSession>
+</CONFIG>
