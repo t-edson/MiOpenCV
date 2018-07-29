@@ -40,6 +40,7 @@
      *  7/2018 - Modified by t-edson:
                - Remove support MSEGUI, to simplify.
                - Adapted to work with Lazarus in  Limux and Windows
+			   - Fixed to work with Lazarus 1.8
 
      *********************************************************************
      *                                                                   *
