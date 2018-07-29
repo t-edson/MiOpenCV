@@ -11,8 +11,6 @@ Purpose: IPL Common Header file
 
 unit IPL;
 
-{$A+,Z+}
-
 interface
 {$ifdef FPC}{$mode delphi}{$endif}
 

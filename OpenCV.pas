@@ -37,6 +37,10 @@
      *           incompatibility ( lifecam 6000HD ...  )                 *
      *         - fix for 'Not a 24 bit color iplImage!'                  *
      *           in IplImage2Bitmap                                      *
+     *  7/2018 - Modified by t-edson:
+               - Remove support MSEGUI, to simplify.
+               - Adapted to work with Lazarus in  Limux and Windows
+
      *********************************************************************
      *                                                                   *
      *                                                                   *
@@ -59,12 +63,8 @@ unit OpenCV;
 {set here the OpenCV version}
 {$define V2}
 
-
-{If you use Freepascal with MSEGUI define the same symbol,
- else if you use Lazarus do not define MSEGUI symbol} 
-{$ifdef FPC} 
+{$ifdef FPC}
   {$mode delphi}
-//   {$define MSEGUI}
   {$ifdef LCL}
     {$define LAZARUS}
   {$endif}
@@ -83,7 +83,7 @@ uses
 {$endif}  
 {$ifdef FPC}
     {$ifdef LAZARUS}
-     Graphics, FPImage, IntfGraphics,
+     Graphics, FPImage, IntfGraphics, GraphType,
     {$endif}
 {$else}
   Graphics,
@@ -103,12 +103,13 @@ const
 
 {$else}
 {$ifdef V2}
- cvDLL       = 'opencv_imgproc2412.dll';
- videoDLL    = 'opencv_video2412.dll';
- calibDLL    = 'opencv_calib3d2412.dll';
- HighGUI_DLL = 'opencv_highgui2412.dll';
- cxCore      = 'opencv_core2412.dll';
- legacyDLL   = 'opencv_legacy2412d.dll';
+ cvDLL       = 'opencv_imgproc2413.dll';
+ videoDLL    = 'opencv_video2413.dll';
+ calibDLL    = 'opencv_calib3d2413.dll';
+ HighGUI_DLL = 'opencv_highgui2413.dll';
+ cxCore      = 'opencv_core2413.dll';
+ legacyDLL   = 'opencv_legacy2413.dll';
+ objdetect_lib='opencv_objdetect2413.dll';
 {$else}
  cvDLL       = 'CV100.DLL';
  videoDLL    = 'CV100.DLL';
@@ -127,7 +128,8 @@ const
  calibDLL    = 'libopencv_calib3d.so.2.4.9';
  HighGUI_DLL = 'libopencv_highgui.so.2.4.9';
  cxCore      = 'libopencv_core.so.2.4.9';
- legacyDLL = 'libopencv_legacy.so.2.4.9';
+ legacyDLL   = 'libopencv_legacy.so.2.4.9';
+ objdetect_lib='libopencv_objdetect.so.2.4.9';
 {$else}
  cvDLL       = '???';
  videoDLL    = '???';
@@ -281,11 +283,10 @@ type
   TIntegerArr=array of Integer;
 
 
-  CvSize = record
+  TCvSize = record
             width  : longint;
             height : longint;
            end;
-  TCvSize = CvSize;
   PCvSize = ^TCvSize;
 
   CvPoint2D32f = record
@@ -429,6 +430,7 @@ Type
 {************************************** CvRect **************************************** }
 
   type
+    pCvRect = ^CvRect;
 
      CvRect = record
           x : longint;
@@ -781,13 +783,12 @@ const
                      real_name: PCvChar = nil ): pointer; cdecl;
 
 
- { load image from file
-   iscolor: >0 - output image is always color,
-             0 - output image is always grayscale,
-            <0 - output image is color or grayscale dependending on the file }
- type
-        TCvLoadImageIsColor = ( CV_LOAD_IMAGE_GRAYSCALE = 0, CV_LOAD_IMAGE_COLOR = 1, CV_LOAD_IMAGE_UNCHANGED = -1);
- Function  cvLoadImage( const filename : PCvChar; iscolor : TCvLoadImageIsColor=CV_LOAD_IMAGE_COLOR) : PIplImage; cdecl;
+ const
+   CV_LOAD_IMAGE_UNCHANGED = -1;
+   CV_LOAD_IMAGE_GRAYSCALE = 0;
+   CV_LOAD_IMAGE_COLOR = 1;
+
+ function cvLoadImage(const filename: pCvChar; iscolor: Integer = CV_LOAD_IMAGE_UNCHANGED): pIplImage; cdecl;
  Function  cvSaveImage( const filename : PCvChar; const image : Pointer) : integer; cdecl;
 
 
@@ -887,7 +888,7 @@ type TcvResizeInterpolation = (
 
  {-----------------------------------------------}
   {Delphi procedure to convert a OCV iplImage to a Delphi bitmap}
-  procedure IplImage2Bitmap(iplImg: PIplImage; var bitmap: TBitmap);
+ procedure iplImage2Bitmap(img: PIplImage;var bmp:TBitmap);
   {Delphi procedure to convert a Delphi bitmap to a OCV iplImage}
   procedure Bitmap2IplImage(iplImg: PIplImage; bitmap: TBitmap);
   {Delphi procedure to convert a OCV 32 bit iplImage to a 8 bit image}
@@ -907,7 +908,7 @@ type TcvResizeInterpolation = (
               line_type:longint; shift:longint);
   function  cvRect_( x, y, width, height: longint ): CvRect;
   procedure CV_SWAP(var a, b, t: pointer);
-  function cvGetSize(arr: PIplImage):CvSize;
+  function cvGetSize(arr: PIplImage):TCvSize;
   function  cvSlice_(start, end_: longint ): CvSlice;
   function cvContourPerimeter( contour: PCvSeq ): double;
 
@@ -921,7 +922,7 @@ type TcvResizeInterpolation = (
                            
 
   { Creates IPL image (header and data)  }
-  function cvCreateImage(size:CvSize; depth:longint; channels:longint):PIplImage;
+  function cvCreateImage(size:TCvSize; depth:longint; channels:longint):PIplImage;
                         cdecl;
 
 
@@ -1055,7 +1056,7 @@ type TcvResizeInterpolation = (
      depending on <thickness>, <start_angle> and <end_angle> parameters. The resultant figure
      is rotated by <angle>. All the angles are in degrees  }
 
-  procedure cvEllipse(img:PCvArr; center:CvPoint; axes:CvSize; angle:double;
+  procedure cvEllipse(img:PCvArr; center:CvPoint; axes:TCvSize; angle:double;
                 start_angle:double; end_angle:double; color:CvScalar;
                 thickness:longint; line_type:longint; shift:longint); cdecl;
 
@@ -1454,12 +1455,12 @@ function cvConvexHull2( const input: PCvArr;
 
 { Calculates optical flow for 2 images using classical Lucas & Kanade algorithm }
  procedure  cvCalcOpticalFlowLK( prev: PCvarr; curr: PCvarr;
-                                  win_size: CvSize ; velx, vely: PCvarr ); cdecl;
+                                  win_size: TCvSize ; velx, vely: PCvarr ); cdecl;
 
 { Calculates optical flow for 2 images using block matching algorithm }
 procedure  cvCalcOpticalFlowBM( prev: PCvarr; curr: PCvarr;
-                                  block_size, shift_size: CvSize;
-                                  max_range: CvSize; use_previous: longint;
+                                  block_size, shift_size: TCvSize;
+                                  max_range: TCvSize; use_previous: longint;
                                   velx, vely: PCvarr );  cdecl;
 
 { Calculates Optical flow for 2 images using Horn & Schunck algorithm }
@@ -1484,7 +1485,7 @@ procedure  cvCalcOpticalFlowHS( prev: PCvarr; curr: PCvarr;
                                      prev_features: PCvPoint2D32f;
                                      curr_features: PCvPoint2D32f;
                                      count: longint;
-                                     win_size: CvSize;
+                                     win_size: TCvSize;
                                      level: longint;
                                      status: PCvChar;
                                      track_error: PSingle;
@@ -1813,20 +1814,20 @@ const
   CVAPI(CvMat* ) cvLoadImageM( const char* filename, int iscolor CV_DEFAULT(CV_LOAD_IMAGE_COLOR));
 *)
 
-function cvLoadImageM(const filename: pCvChar; iscolor: TCvLoadImageIsColor=CV_LOAD_IMAGE_COLOR): pCvMat; cdecl;
+function cvLoadImageM(const filename: pCvChar; iscolor: integer=CV_LOAD_IMAGE_COLOR): pCvMat; cdecl;
 
 
 (*
   decode image stored in the buffer
   CVAPI(IplImage* ) cvDecodeImage( const CvMat* buf, int iscolor CV_DEFAULT(CV_LOAD_IMAGE_COLOR));
 *)
-function cvDecodeImage(const buf: pCvMat; iscolor: TCvLoadImageIsColor=CV_LOAD_IMAGE_COLOR): pIplImage; cdecl;
+function cvDecodeImage(const buf: pCvMat; iscolor: integer=CV_LOAD_IMAGE_COLOR): pIplImage; cdecl;
 
 (*
   CVAPI(CvMat* ) cvDecodeImageM( const CvMat* buf, int iscolor CV_DEFAULT(CV_LOAD_IMAGE_COLOR));
 *)
 
-function cvDecodeImageM(const buf: pCvMat; iscolor: TCvLoadImageIsColor=CV_LOAD_IMAGE_COLOR): pCvMat; cdecl;
+function cvDecodeImageM(const buf: pCvMat; iscolor: integer=CV_LOAD_IMAGE_COLOR): pCvMat; cdecl;
 
 (*
   encode image and store the result as a byte vector (single-row 8uC1 matrix)
@@ -1952,7 +1953,7 @@ procedure cvUpdateWindow(window_name: pCvChar); cdecl;
 
   { initialize video file writer }
   function cvCreateVideoWriter( const filename: PCvChar; fourcc: integer;
-                                           fps: double; frame_size: cvsize;
+                                           fps: double; frame_size: Tcvsize;
                                            is_color: integer = 1): pcvvideowriter; cdecl;
 
   { write frame to video file }
@@ -2133,11 +2134,93 @@ const
         userdata: Pointer = nil;
         prev_userdata: PPointer = nil ): CvErrorCallback; cdecl;
 
+/////////////////////// FACE DETECT ///////////////////
+const
+  CV_HAAR_FEATURE_MAX = 3;
+
+Type
+  pCvHaarFeature = ^TCvHaarFeature;
+
+  TCvHaarFeatureRect = record
+    r: CvRect;
+    weight: Float;
+  end;
+
+  TCvHaarFeature = record
+    tilted: Integer; // int tilted;
+    // struct
+    // {
+    // CvRect r;
+    // float weight;
+    // } rect[CV_HAAR_FEATURE_MAX];
+    rect: array [0 .. CV_HAAR_FEATURE_MAX - 1] of TCvHaarFeatureRect;
+  end;
+
+  pCvHaarClassifier = ^TCvHaarClassifier;
+
+  TCvHaarClassifier = record
+    count: Integer; // int count;
+    haar_feature: pCvHaarFeature; // CvHaarFeature* haar_feature;
+    threshold: pFloat; // float* threshold;
+    left: pInteger; // int* left;
+    right: pInteger; // int* right;
+    alpha: pFloat; // float* alpha;
+  end;
+
+  pCvHaarStageClassifier = ^TCvHaarStageClassifier;
+
+  TCvHaarStageClassifier = record
+    count: Integer; // int  count;
+    threshold: Float; // float threshold;
+    classifier: pCvHaarClassifier; // CvHaarClassifier* classifier;
+    next: Integer; // int next;
+    child: Integer; // int child;
+    parent: Integer; // int parent;
+  end;
+
+  // typedef struct CvHidHaarClassifierCascade CvHidHaarClassifierCascade;
+  TCvHidHaarClassifierCascade = record
+
+  end;
+
+  pCvHidHaarClassifierCascade = ^TCvHidHaarClassifierCascade;
+  pCvHaarClassifierCascade = ^TCvHaarClassifierCascade;
+
+  // typedef struct CvHaarClassifierCascade
+  TCvHaarClassifierCascade = record
+    flags: Integer; // int  flags;
+    count: Integer; // int  count;
+    orig_window_size: TCvSize; // CvSize orig_window_size;
+    real_window_size: TCvSize; // CvSize real_window_size;
+    scale: Double; // double scale;
+    stage_classifier: pCvHaarStageClassifier; // CvHaarStageClassifier* stage_classifier;
+    hid_cascade: pCvHidHaarClassifierCascade; // CvHidHaarClassifierCascade* hid_cascade;
+  end;
+
+Const
+  CV_HAAR_DO_CANNY_PRUNING = 1;
+  CV_HAAR_SCALE_IMAGE = 2;
+  CV_HAAR_FIND_BIGGEST_OBJECT = 4;
+  CV_HAAR_DO_ROUGH_SEARCH = 8;
+
+function cvHaarDetectObjects(const image: pCvArr; cascade: pCvHaarClassifierCascade; storage: pCvMemStorage; scale_factor: Double { 1.1 };
+  min_neighbors: Integer { 3 }; flags: Integer { 0 }; min_size: TCvSize { CV_DEFAULT(cvSize(0,0)) }; max_size: TCvSize { CV_DEFAULT(cvSize(0,0)) } )
+  : pCvSeq; cdecl;
+function CvSize(const width, height: Integer): TCvSize;
+
 {*****************************************************************************}
 implementation
 
 uses
   Dialogs;
+
+  function CvSize;
+  begin
+    Result.width := width;
+    Result.height := height;
+  end;
+
+ function cvHaarDetectObjects;            external objdetect_lib;
 
  function cvAlloc;                        external cxCore name 'cvAlloc';
  procedure cvFree;                        external cxCore name 'cvFree_';
@@ -2577,7 +2660,7 @@ end;
 procedure cvEllipseBox(img:PCvArr; box:CvBox2D; color:CvScalar; thickness:longint;
               line_type:longint; shift:longint);
 var
-      axes: CvSize;
+      axes: TCvSize;
 begin
       axes.width := cvRound(box.size.height *0.5);
       axes.height := cvRound(box.size.width *0.5);
@@ -2605,9 +2688,9 @@ begin
         b := t;
 end;
 
-function cvGetSize(arr: PIplImage):CvSize;
+function cvGetSize(arr: PIplImage):TCvSize;
 var
- cs: CvSize;
+ cs: TCvSize;
 begin
         cs.width := arr^.Width;
         cs.height := arr^.Height;
@@ -2646,161 +2729,74 @@ begin
     result := ( ((c1) and 255) + ( ((c2) and 255) shl 8) + ( ((c3) and 255) shl 16) + ( ((c4) and 255) shl 24) );
 end;
 
-
 {-----------------------------------------------------------------------------
   Procedure:  IplImage2Bitmap
-  Author:     G. De Sanctis
-  Date:       23-set-2005
+  Author:     K.Otani
+  Date:       25-Oct-2017
   Arguments:  iplImg: PIplImage; bitmap: TBitmap
-  Description: convert a IplImage to a Windows bitmap
+  Description: Convert IplImage to Bitmap for Raspberry pi
+  refer to
+  http://lazarus-ccr.sourceforge.net/docs/lcl/graphtype/trawimagedescription.html
 -----------------------------------------------------------------------------}
-procedure IplImage2Bitmap(iplImg: PIplImage; var bitmap: TBitmap);
-  VAR
-    i : PtrUint; // by Zbyna
-    j        :  PtrUint;
-    offset   :  PtrUint;
-    dataByte :  PByteArray;
-    RowIn    :  pByteArray;
-{$ifdef MSEGUI}
-    size     :  sizety;
-    sh       :  integer;
-    po2      :  prgbtripleaty;
-    k        :  integer;
-{$endif}
-{$ifdef LAZARUS}
-    lazImg   : TLazIntfImage;
-{$endif}
-BEGIN
-  TRY
-   //assert((iplImg.Depth = 8) and (iplImg.NChannels = 3),   // by zbyna
-   //             'Not a 24 bit color iplImage!');
+procedure iplImage2Bitmap(img: PIplImage;var bmp:TBitmap);
+var
+    ImgPtr      : PByte;
+    offset      : Longword;
+    x,y         : Integer;
+    PxlPtr      : PByte;
+    LinePtr     : PByte;
+    RawImage    : TRawImage;
+    bmp2        : TBitmap;
+    BytePerPixel: Integer;
+begin
+    bmp2:=TBitmap.Create;
+    bmp2.Width:=img^.Width;
+    bmp2.Height:=img^.Height;
 
-{$ifdef MSEGUI}
-    size.cy := iplImg.Height;
-    size.cx := iplImg.Width;
-    bitmap.size := size;
-    sh      := bitmap.scanhigh;
-{$else}
-    bitmap.Height := iplImg.Height;
-    bitmap.Width := iplImg.Width;
-{$endif}  
-{$ifdef LAZARUS}
-    lazImg := TLazIntfImage.Create(iplImg.Width, iplImg.Height);
+    RawImage:= bmp2.RawImage;
+    BytePerPixel := RawImage.Description.BitsPerPixel div 8;
 
-    lazImg.LoadFromBitmap(bitmap.BitmapHandle, bitmap.MaskHandle);
-{$endif}
-    // origin BL = Bottom-Left
-    if (iplImg.ChannelSeq = 'BGR')
-        and (iplimg.Origin = IPL_ORIGIN_BL) then
-    begin                                           // iplImg.ChannelSeq = 'BGR'
-{$ifdef MSEGUI} 
-        po2:= bitmap.scanline[0];
-        offset := PtrUint(iplimg.ImageData);
-		// scan every line from IPL image because could have filler
-		// bytes in the end
-		FOR j := 0  TO bitmap.size.cy - 1 DO
-		BEGIN
-          offset := PtrUint(iplimg.ImageData) + iplImg.WidthStep * j;
-          FOR k := 0 TO bitmap.size.cx - 1 DO
-          BEGIN
-              dataByte := pbytearray( offset);
-        	  with po2^[j*bitmap.size.cx + (bitmap.size.cx - 1 - k)] do begin
-       		    blue:= dataByte[0];
-       			green:= dataByte[1];
-       			red:= dataByte[2];
-          	  end;
-              offset := offset + 3 ;
-           END;
-        END;
-{$else}
-  {$ifdef LAZARUS}
-        offset := PtrUint(iplimg.ImageData) - iplImg.WidthStep;
-        FOR j := 0 TO Bitmap.Height-1 DO
-        BEGIN
-          RowIn  := lazImg.GetDataLineStart(bitmap.Height -1 - j);
-          offset := offset + iplImg.WidthStep;
-          dataByte := pbytearray( offset);
-          Move(rowin, dataByte, iplImg.WidthStep);
-        END;
-   {$else}
-        RowIn  := Bitmap.Scanline[bitmap.height -1 ];
-        dataByte := pbytearray(iplimg.ImageData);
-       {direct copy of the iplImage row bytes to bitmap row}
-        CopyMemory(rowin, dataByte, iplImg.ImageSize);
-   {$endif}
-{$endif}
-    end  {iplImg.ChannelSeq = 'BGR'}    else    // iplImg.ChannelSeq = 'GRAY'
-{$ifdef MSEGUI}
-        po2:= bitmap.scanline[0];
-        offset := PtrUint(iplimg.ImageData);
-		// scan every line from IPL image because could have filler
-		// bytes in the end
-		FOR j := 0 TO bitmap.size.cy - 1 DO
-		BEGIN
-          offset := PtrUint(iplimg.ImageData) + iplImg.WidthStep * j;
-          FOR k := 0 TO bitmap.size.cx - 1 DO
-          BEGIN
-              dataByte := pbytearray( offset);
-        	  with po2^[j*bitmap.size.cx + k] do begin
-       		    blue:= dataByte[0];
-       			green:= dataByte[1];
-       			red:= dataByte[2];
-          	  end;
-              offset := offset + 3 ;
-           END;
-        END;
-{$else}
-  {$ifdef LAZARUS}  //iplImg.ChannelSeq = 'GRAY'    // by zbyna
-    if (iplImg.ChannelSeq = 'GRAY') then
-      begin
-        //offset := PtrUint(iplimg.ImageData) - iplImg.WidthStep;
-        FOR j := 0 TO bitmap.Height - 1 DO
-        begin
-          //RowIn  := lazImg.GetDataLineStart(bitmap.Height -1 - j);
-          //offset := PtrUint(iplimg.ImageData) + iplImg.WidthStep * j;
-          RowIn  := lazImg.GetDataLineStart(j);
-          offset := PtrUint(iplimg.ImageData) + iplImg.WidthStep * j;
-          dataByte := pbytearray( offset);
-          for i:=0 to bitmap.Width -1 do
-            begin
-              RowIn[3*i  ] := dataByte[i];
-              RowIn[3*i+1] := dataByte[i];
-              RowIn[3*i+2] := dataByte[i];
-            end;
-        End
+    LinePtr := RawImage.Data;
+    ImgPtr:=img^.ImageData;
 
-      end   else
+    if img^.NChannels=3 then
+     begin
+       for y:=0 to img^.Height-1 do
        begin
-        FOR j := 0 TO Bitmap.Height-1 DO
-        BEGIN
-          RowIn  := lazImg.GetDataLineStart(j );
-          offset := PtrUint(iplimg.ImageData) + iplImg.WidthStep * j;
-          dataByte := pbytearray( offset);
-          Move(rowin, dataByte, iplImg.WidthStep);
-        END;
+          PxlPtr := LinePtr;
+          for x:=0 to img^.Width-1 do
+            begin
+               offset  :=(img^.WidthStep*y)+(x*3);
+               PxlPtr^ :=ImgPtr[offset+0]; Inc(PxlPtr);
+               PxlPtr^ :=ImgPtr[offset+1]; Inc(PxlPtr);
+               PxlPtr^ :=ImgPtr[offset+2]; Inc(PxlPtr);
+               if BytePerPixel = 4 then    Inc(PxlPtr);// BytePerPixel = 4bytes (RaspberryPi)
+            end;
+          // There might be gap at the end of line
+          Inc(LinePtr, RawImage.Description.BytesPerLine);
        end;
-  {$else}
- 	FOR j := 0 TO Bitmap.Height-1   DO
-        BEGIN
-          RowIn  := Bitmap.Scanline[j ];
-          offset := PtrUint(iplimg.ImageData) + iplImg.WidthStep * j;
-          dataByte := pbytearray( offset);
-          CopyMemory(rowin, dataByte, iplImg.WidthStep);
-        END;
-  {$endif}
-{$endif}
-{$ifdef LAZARUS}
-    bitmap.LoadFromIntfImage(lazImg);
-    lazImg.Free;
-{$endif}
-    exit;
-  Except
-        on E: Exception do
-        begin
-             raise  Exception.Create('IplImage2Bitmap- error - ' + e.Message);
-        end;
-  END
-END; {IplImage2Bitmap}
+     end;
+
+     if img^.NChannels=1 then
+     begin
+       for y:=0 to img^.Height-1 do
+
+         begin
+            PxlPtr := LinePtr;
+            for x:=0 to img^.Width-1 do
+               begin
+                 offset  :=(img^.WidthStep*y)+(x);
+                 PxlPtr^ :=ImgPtr[offset]; Inc(PxlPtr);
+                 PxlPtr^ :=ImgPtr[offset]; Inc(PxlPtr);
+                 PxlPtr^ :=ImgPtr[offset]; Inc(PxlPtr);
+                 if BytePerPixel = 4 then  Inc(PxlPtr);// BytePerPixel = 4bytes (RaspberryPi)
+               end;
+            Inc(LinePtr, RawImage.Description.BytesPerLine);
+         end;
+     end;
+     bmp.Assign(bmp2);
+     bmp2.free;
+end;
 
 {-----------------------------------------------------------------------------
   Procedure:  Bitmap2IplImage
@@ -2813,63 +2809,21 @@ procedure Bitmap2IplImage(iplImg: PIplImage;  bitmap: TBitmap);
   VAR
     dataByte :  PByteArray;
     RowIn    :  pByteArray;
-{$ifdef MSEGUI}
-    offset   :  longint;
-    size     :  sizety;
-    sh       :  integer;
-    po2      :  prgbtripleaty;
-    j,k      :  integer;
-{$endif}
-{$ifdef LAZARUS}
     lazImg: TLazIntfImage;
-{$endif}
 BEGIN
   TRY
     assert((iplImg.Depth = 8) and (iplImg.NChannels = 3),
                 'Not a 24 bit color iplImage!');
-// MSEGUI *NOT* defined
-{$ifndef MSEGUI} 
-    assert((bitmap.pixelFormat = pf24bit) ,
-                'Not a 24 bit color BMP bitmap!');
-{$endif}  
-
     iplimg.Origin := IPL_ORIGIN_BL;
     iplImg.ChannelSeq := 'BGR';
 
-{$ifdef MSEGUI}     
-    po2:= bitmap.scanline[0];
-    offset := longint(iplimg.ImageData);
-	// scan every line from IPL image because could have filler
-	// bytes in the end
-	FOR j := 0  TO bitmap.size.cy - 1 DO
-	BEGIN
-       offset := longint(iplimg.ImageData) + iplImg.WidthStep * j;
-       FOR k := 0 TO bitmap.size.cx - 1 DO
-       BEGIN
-          dataByte := pbytearray( offset);
-      	  with po2^[(bitmap.size.cy - 1 - j)*bitmap.size.cx +  k] do begin
-      		    dataByte[0] := blue;
-       			dataByte[1] := green;
-       			dataByte[2] := red;
-       	  end;
-          offset := offset + 3 ;
-       END;
-    END;
-{$else}
-  {$ifdef LAZARUS}
     lazImg := TLazIntfImage.Create(bitmap.Width, bitmap.Height);
     lazImg.LoadFromBitmap(bitmap.Handle, bitmap.MaskHandle);
     RowIn  := lazImg.GetDataLineStart(bitmap.height -1 );
-  {$else}
-    RowIn  := Bitmap.Scanline[bitmap.height -1  ];
-  {$endif}
     dataByte := pbytearray(iplimg.ImageData);
     {direct copy of the bitmap row bytes to iplImage rows}
-    Move(dataByte, rowin, iplimg.ImageSize);
-{$endif}
-{$ifdef LAZARUS}
+    Move(rowin^, dataByte^, iplimg.ImageSize);
     lazImg.Free;
-{$endif}
   Except
         on E: Exception do
         begin
