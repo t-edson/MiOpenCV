@@ -15,3 +15,5 @@ OpenCV debe estar previamente instalado en la PC donde se va a ejecutar. Esto si
 * Para Windows, descargar los *.dll de https://opencv.org/releases.html (Descargar ejecutable y expandir carpeta para obtener los archivos *.dll).
 
 * Para Linux se debe instalar OpenCV ejecutando en el terminal: sudo apt-get install libopencv-dev
+
+Para más información sobre la instalación de OpenCV, revisar el artículo: http://blog.pucp.edu.pe/blog/tito/2018/07/28/opencv-con-lazarus-instalacion-en-linux/
